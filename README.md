@@ -22,12 +22,14 @@ Now that you've put a little thought into how you might design your database, it
 
 ```python
 # Import necessary packages
-
+import sqlite3
+import pandas as pd
 ```
 
 
 ```python
 # Create the database school.sqlite 
+conn = sqlite3.connect("school.sqlite")
 
 ```
 
@@ -37,7 +39,19 @@ Create a table called contactInfo to house contact information for both students
 
 
 ```python
-# Your code here
+cur = conn.cursor()
+cur.execute("""CREATE TABLE contactInfo(
+                                        userid INTEGER PRIMARY KEY,
+                                        firstName TEXT,
+                                        lastName TEXT,
+                                        role TEXT,
+                                        telephone INTEGER,
+                                        street INTEGER,
+                                        city TEXT,
+                                        state TEXT,
+                                        zipcode INTEGER
+                                        );
+""")
 ```
 
 ## Populate the Table
@@ -56,6 +70,18 @@ with open('contact_list.pickle', 'rb') as f:
 
 ```python
 # Iterate over the contact list and populate the contactInfo table here
+for contact in contacts:
+    firstName = contact['firstName']
+    lastName = contact['lastName']
+    role = contact['role']
+    telephone = contact['telephone ']
+    street = contact['street']
+    city = contact['city']
+    state = contact['state']
+    zipcode = contact['zipcode ']
+    cur.execute("""INSERT INTO contactInfo(firstName, lastName, role, telephone, street, city, state,zipcode)
+            VALUES('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');
+    """.format(firstName, lastName, role, telephone, street, city, state,zipcode) )
 
 ```
 
@@ -63,7 +89,11 @@ with open('contact_list.pickle', 'rb') as f:
 
 
 ```python
-# Your code here 
+cur.execute("""SELECT * 
+FROM contactInfo;""")
+df = pd.DataFrame(cur.fetchall())
+df.columns = [x[0] for x in cur.description]
+df
 
 ```
 
@@ -73,7 +103,7 @@ Persist your changes by committing them to the database.
 
 
 ```python
-# Your code here
+conn.commit()
 ```
 
 ## Create a Table for Student Grades
@@ -95,6 +125,13 @@ CREATE TABLE table_name(
 
 ```python
 # Create the grades table
+cur.execute("""CREATE TABLE grades (
+                        userId INTEGER NOT NULL,
+                        courseId INTEGER NOT NULL,
+                        grades INTEGER,
+                        PRIMARY KEY(userId, courseId)
+                        );
+            """)
 
 ```
 
@@ -105,18 +142,30 @@ An analyst just realized that there is a duplicate entry in the contactInfo tabl
 
 ```python
 # Find the duplicate entry
-
+cur.execute("""SELECT firstName, lastName, telephone, COUNT(*)
+FROM contactInfo
+GROUP BY firstName, lastName, telephone
+HAVING COUNT(*) > 1;
+""").fetchall()
 ```
 
 
 ```python
 # Delete the duplicate entry
+cur.execute("""DELETE FROM contactInfo
+            WHERE telephone = 3259909290;
+            """)
 
 ```
 
 
 ```python
 # Check that the duplicate entry was removed
+cur.execute("""SELECT firstName, lastName, telephone, COUNT(*)
+FROM contactInfo
+GROUP BY firstName, lastName, telephone
+HAVING COUNT(*) > 1;
+""").fetchall()
 
 ```
 
@@ -127,12 +176,23 @@ Ed Lyman just moved to `2910 Simpson Avenue York, PA 17403`. Update his address 
 
 ```python
 # Update Ed's address
+cur.execute(""" UPDATE contactInfo
+            SET street = '2910 Simpson Avenue',
+                city = 'York',
+                state = 'PA',
+                zipcode = '17403'
+            WHERE firstName = 'Ed' AND lastName = 'Lyman';""")
 
 ```
 
 
 ```python
 # Query the database to ensure the change was made
+cur.execute("""SELECT *
+            FROM contactInfo;""")
+df = pd.DataFrame(cur.fetchall())
+df.columns = [x[0] for x in cur.description]
+df
 
 ```
 
@@ -142,7 +202,7 @@ Once again, persist your changes by committing them to the database.
 
 
 ```python
-# Your code here
+conn.commit()
 ```
 
 ## Summary
